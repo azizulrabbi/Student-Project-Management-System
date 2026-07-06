@@ -162,7 +162,7 @@ Program.cs
 ![Company Dashboad](screenshots/company-dashboard.png)
 
 ### Messaging Module
-![Messaging Module](screenshort/messaing-module.png)
+![Messaging Module](screenshots/messaging-module.png)
 ---
 
 ## Future Improvements
@@ -172,7 +172,6 @@ Program.cs
 - Real-time Chat
 - Mobile Responsive Improvements
 - Dashboard Analytics
-
 ---
 
 ## Contributors
