@@ -1,0 +1,52 @@
+@model List<SPMS.Models.Project>
+@{ ViewData["Title"] = "My Projects"; }
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0">My Submitted Projects</h4>
+    <a href="/Company/SubmitProject" class="btn btn-koi"><i class="bi bi-plus-circle me-1"></i>Submit New Project</a>
+</div>
+@if (!Model.Any())
+{
+    <div class="card border-0 shadow-sm"><div class="card-body text-center py-5">
+        <i class="bi bi-folder-plus display-3 opacity-25 d-block mb-3"></i>
+        <p class="text-muted">No projects submitted yet.</p>
+        <a href="/Company/SubmitProject" class="btn btn-koi">Submit First Project</a>
+    </div></div>
+}
+else
+{
+    <div class="card border-0 shadow-sm"><div class="card-body p-0"><div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead><tr><th>Title</th><th>Status</th><th>Category</th><th>Group Assigned</th><th>Tutor</th><th>Date</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var p in Model)
+            {
+                var b = p.Status switch {
+                    ProjectStatus.PendingAdminReview => "bg-warning text-dark",
+                    ProjectStatus.AdminApproved => "bg-success",
+                    ProjectStatus.AdminRejected => "bg-danger",
+                    ProjectStatus.TutorReviewPending => "bg-info",
+                    ProjectStatus.TutorApproved => "bg-primary",
+                    _ => "bg-secondary"
+                };
+                var agDict2 = ViewBag.AssignedGroups as Dictionary<int, SPMS.Models.TutorialGroup>;
+                var ag2 = agDict2 != null && agDict2.ContainsKey(p.Id) ? agDict2[p.Id] : null;
+                <tr>
+                    <td class="fw-medium">@p.Title</td>
+                    <td><span class="badge @b">@p.Status</span></td>
+                    <td>@(p.Category.HasValue ? p.Category.ToString() : "—")</td>
+                    <td>@(ag2 != null ? ag2.Name : "—")</td>
+                    <td>@(ag2?.Tutorial?.Tutor?.FullName ?? "—")</td>
+                    <td class="small text-muted">@p.CreatedAt.ToString("dd MMM yyyy")</td>
+                    <td>
+                        <a href="/Company/ProjectDetails/@p.Id" class="btn btn-sm btn-outline-primary" title="View"><i class="bi bi-eye"></i></a>
+                        @if (p.Status == ProjectStatus.PendingAdminReview)
+                        {
+                            <a href="/Company/EditProject/@p.Id" class="btn btn-sm btn-outline-warning ms-1" title="Edit"><i class="bi bi-pencil"></i></a>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div></div></div>
+}

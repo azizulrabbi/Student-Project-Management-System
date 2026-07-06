@@ -1,0 +1,41 @@
+@model List<SPMS.Models.TutorialGroup>
+@{ ViewData["Title"] = "Active Groups"; }
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div><h4 class="fw-bold mb-0">Active Groups</h4><small class="text-muted">Groups under your supervision</small></div>
+    <a href="/Tutor/Dashboard" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Dashboard</a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>You have no active groups yet.</div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var g in Model)
+        {
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header koi-card-header py-3 d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-people me-2"></i>@g.Name</span>
+                        <span class="badge bg-success">Approved</span>
+                    </div>
+                    <div class="card-body p-4">
+                        <p class="fw-semibold mb-1">@(g.ApprovedProject?.Title ?? "No project assigned yet")</p>
+                        @if (g.ApprovedProject?.Company != null)
+                        {<p class="text-muted small mb-2"><i class="bi bi-building me-1"></i>@g.ApprovedProject.Company.FullName</p>}
+                        <p class="text-muted small mb-1"><i class="bi bi-journal-bookmark me-1"></i>@g.Tutorial?.Name</p>
+                        <p class="text-muted small mb-3">
+                            <i class="bi bi-people me-1"></i>@g.Members.Count member(s):
+                            @string.Join(", ", g.Members.Select(m => m.Student?.FullName ?? ""))
+                        </p>
+                        <a href="/Tutor/TutorialDetails/@g.TutorialId" class="btn btn-koi w-100">
+                            <i class="bi bi-calendar-week me-1"></i>View Progress &amp; Give Feedback
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

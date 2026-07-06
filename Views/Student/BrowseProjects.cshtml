@@ -1,0 +1,131 @@
+@model List<SPMS.Models.Project>
+@{ ViewData["Title"] = "Browse Projects"; }
+@{
+    var myIds = ViewBag.MySelectionIds as List<int> ?? new List<int>();
+    int myCount = ViewBag.MySelectionCount ?? 0;
+    bool locked = ViewBag.Locked ?? false;
+}
+
+@if (locked)
+{
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div><h4 class="fw-bold mb-0">Browse Projects</h4></div>
+    </div>
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-lock display-3 opacity-25 d-block mb-3"></i>
+            @{
+                var reason = ViewBag.LockReason as string;
+            }
+            @if (reason == "project_approved")
+            {
+                <h5 class="fw-bold mb-2">Project Already Approved</h5>
+                <p class="text-muted mb-3">Your group already has an approved project. Head to your Tutorial Class to submit weekly progress.</p>
+            }
+            else if (reason == "no_tutorial")
+            {
+                <h5 class="fw-bold mb-2">Not Enrolled in a Tutorial</h5>
+                <p class="text-muted mb-3">You need to be enrolled in a tutorial by your admin before you can access projects.</p>
+            }
+            else if (reason == "no_group")
+            {
+                <h5 class="fw-bold mb-2">No Group Yet</h5>
+                <p class="text-muted mb-3">Create or join a group in your Tutorial Class first, then get tutor approval before browsing projects.</p>
+            }
+            else
+            {
+                <h5 class="fw-bold mb-2">Group Not Approved Yet</h5>
+                <p class="text-muted mb-3">Your group needs tutor approval before you can access projects. Go to your Tutorial Class to request approval.</p>
+            }
+            <a href="/Student/MyTutorial" class="btn btn-koi"><i class="bi bi-journal-bookmark me-1"></i>Go to My Tutorial</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div><h4 class="fw-bold mb-0">Browse Projects</h4><small class="text-muted">Admin-approved projects available for selection</small></div>
+        @if (myCount > 0)
+        {
+            <span class="badge bg-success fs-6 px-3 py-2"><i class="bi bi-check-circle me-1"></i>1 Project Selected</span>
+        }
+    </div>
+
+    <form method="get" class="row g-2 mb-4">
+        <div class="col-md-8">
+            <input type="text" name="search" value="@ViewBag.Search" class="form-control" placeholder="Search by title or description…" />
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-koi w-100"><i class="bi bi-search me-1"></i>Search</button>
+        </div>
+        @if (!string.IsNullOrEmpty(ViewBag.Search as string))
+        {
+            <div class="col-md-2">
+                <a href="/Student/BrowseProjects" class="btn btn-outline-secondary w-100">Clear</a>
+            </div>
+        }
+    </form>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>No projects found.</div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var p in Model)
+            {
+                bool selected = myIds.Contains(p.Id);
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100 @(selected ? "border-start border-success border-3" : "")">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="fw-bold mb-0">@p.Title</h6>
+                                @if (selected)
+                                {
+                                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Selected</span>
+                                }
+                            </div>
+                            <p class="text-muted small mb-2">
+                                <i class="bi bi-building me-1"></i>@p.Company?.FullName
+                                &nbsp;|&nbsp;
+                                <i class="bi bi-tag me-1"></i>@p.Category
+                            </p>
+                            <p class="small mb-3 text-truncate-3">@p.Description</p>
+                            @if (!string.IsNullOrEmpty(p.FilePath))
+                            {
+                                <a href="/@p.FilePath" target="_blank" class="btn btn-sm btn-outline-secondary mb-2 w-100">
+                                    <i class="bi bi-file-earmark-arrow-down me-1"></i>Download Brief
+                                </a>
+                            }
+                            @if (selected)
+                            {
+                                <form method="post" action="/Student/DeselectProject">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="projectId" value="@p.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                                        <i class="bi bi-bookmark-dash me-1"></i>Remove Selection
+                                    </button>
+                                </form>
+                            }
+                            else if (myCount < 1)
+                            {
+                                <form method="post" action="/Student/SelectProject">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="projectId" value="@p.Id" />
+                                    <button type="submit" class="btn btn-koi btn-sm w-100">
+                                        <i class="bi bi-bookmark-plus me-1"></i>Select Project
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-secondary w-100" disabled>You already selected a project</button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}

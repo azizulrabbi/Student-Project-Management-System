@@ -1,0 +1,166 @@
+@model SPMS.Models.CreateUserVM
+@{ ViewData["Title"] = "Create User"; }
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="/Admin/ManageUsers" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <h2 class="fw-bold mb-0">Create New User</h2>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header koi-card-header py-3">
+                <h5 class="mb-0 fw-semibold"><i class="bi bi-person-plus me-2 text-primary"></i>User Information</h5>
+                <small class="text-muted">Password will be auto-generated from date of birth: <code>KOI_DayMonthYear</code></small>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="CreateUser" asp-controller="Admin" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger small py-2"></div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="FullName" class="form-label fw-medium">Full Name *</label>
+                            <input asp-for="FullName" class="form-control" placeholder="Enter full name" />
+                            <span asp-validation-for="FullName" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label fw-medium">Email Address *</label>
+                            <input asp-for="Email" class="form-control" placeholder="user@koi.edu.au" />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Role" class="form-label fw-medium">Role *</label>
+                            <select asp-for="Role" class="form-select" id="roleSelect" onchange="toggleRoleFields()">
+                                <option value="Student">Student</option>
+                                <option value="Tutor">Tutor</option>
+                                <option value="Company">Company</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="DOB" class="form-label fw-medium">Date of Birth *</label>
+                            <input asp-for="DOB" class="form-control" type="date" id="dobInput" onchange="updatePasswordPreview()" />
+                            <span asp-validation-for="DOB" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Phone" class="form-label fw-medium">Phone</label>
+                            <input asp-for="Phone" class="form-control" placeholder="e.g. (02) 9283 3583" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-medium">Auto-Generated Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-key"></i></span>
+                                <input type="text" class="form-control bg-light" id="passwordPreview" readonly placeholder="Select DOB to preview" />
+                            </div>
+                            <div class="form-text text-muted">Password is generated from date of birth using template KOI_DayMonthYear</div>
+                        </div>
+                    </div>
+
+                    <!-- Student Fields -->
+                    <div id="studentFields" class="mt-3 p-3 bg-light rounded">
+                        <h6 class="fw-semibold mb-3 text-primary"><i class="bi bi-mortarboard me-2"></i>Student Details</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label asp-for="StudentNumber" class="form-label fw-medium">Student Number</label>
+                                <input asp-for="StudentNumber" class="form-control" placeholder="e.g. KOI2024001" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Program" class="form-label fw-medium">Program</label>
+                                <input asp-for="Program" class="form-control" placeholder="e.g. Bachelor of IT" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Semester" class="form-label fw-medium">Semester</label>
+                                <input asp-for="Semester" class="form-control" type="number" min="1" max="12" placeholder="1-12" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tutor Fields -->
+                    <div id="tutorFields" class="mt-3 p-3 bg-light rounded" style="display:none">
+                        <h6 class="fw-semibold mb-3 text-info"><i class="bi bi-person-badge me-2"></i>Tutor Details</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="Department" class="form-label fw-medium">Department</label>
+                                <input asp-for="Department" class="form-control" placeholder="e.g. Information Technology" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Expertise" class="form-label fw-medium">Expertise</label>
+                                <input asp-for="Expertise" class="form-control" placeholder="e.g. Software Engineering" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Company Fields -->
+                    <div id="companyFields" class="mt-3 p-3 bg-light rounded" style="display:none">
+                        <h6 class="fw-semibold mb-3 text-warning"><i class="bi bi-building me-2"></i>Company Details</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label asp-for="CompanyName" class="form-label fw-medium">Company Name</label>
+                                <input asp-for="CompanyName" class="form-control" placeholder="e.g. Tech Corp Australia" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Industry" class="form-label fw-medium">Industry</label>
+                                <input asp-for="Industry" class="form-control" placeholder="e.g. Information Technology" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="ABN" class="form-label fw-medium">ABN</label>
+                                <input asp-for="ABN" class="form-control" placeholder="12 345 678 901" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-koi px-4">
+                            <i class="bi bi-person-check me-1"></i>Create User
+                        </button>
+                        <a href="/Admin/ManageUsers" class="btn btn-outline-secondary px-4">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm border-start border-4 border-primary">
+            <div class="card-body p-4">
+                <h6 class="fw-semibold mb-3"><i class="bi bi-info-circle me-2 text-primary"></i>Password Policy</h6>
+                <p class="small text-muted mb-2">Passwords are automatically generated from the user's date of birth:</p>
+                <div class="bg-light rounded p-3 font-monospace small">
+                    <div>Template: <strong>KOI_DayMonthYear</strong></div>
+                    <hr class="my-2" />
+                    <div>DOB: 22 Sep 2001</div>
+                    <div>Password: <strong class="text-success">KOI_22092001</strong></div>
+                    <hr class="my-2" />
+                    <div>DOB: 05 Jan 1990</div>
+                    <div>Password: <strong class="text-success">KOI_05011990</strong></div>
+                </div>
+                <p class="small text-muted mt-3 mb-0">
+                    <i class="bi bi-shield-check me-1 text-success"></i>
+                    Users should change their password after first login. Admins can reset passwords anytime.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function toggleRoleFields() {
+    const role = document.getElementById('roleSelect').value;
+    document.getElementById('studentFields').style.display = role === 'Student' ? '' : 'none';
+    document.getElementById('tutorFields').style.display = role === 'Tutor' ? '' : 'none';
+    document.getElementById('companyFields').style.display = role === 'Company' ? '' : 'none';
+}
+function updatePasswordPreview() {
+    const dob = document.getElementById('dobInput').value;
+    if (!dob) { document.getElementById('passwordPreview').value = ''; return; }
+    const d = new Date(dob);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    document.getElementById('passwordPreview').value = `KOI_${day}${month}${year}`;
+}
+document.addEventListener('DOMContentLoaded', () => { toggleRoleFields(); updatePasswordPreview(); });
+</script>
+}

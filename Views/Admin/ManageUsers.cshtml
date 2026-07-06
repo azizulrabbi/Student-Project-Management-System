@@ -1,0 +1,142 @@
+@model List<SPMS.Models.User>
+@{ ViewData["Title"] = "Manage Users"; }
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">Manage Users</h2>
+    <a href="/Admin/CreateUser" class="btn btn-koi">
+        <i class="bi bi-person-plus me-1"></i>Add New User
+    </a>
+</div>
+
+<!-- Filters -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small fw-medium">Search</label>
+                <input type="text" name="search" value="@ViewBag.CurrentSearch" class="form-control" placeholder="Name or email..." />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-medium">Role</label>
+                <select name="role" class="form-select">
+                    <option value="">All Roles</option>
+                    <option value="Student" selected="@(ViewBag.CurrentRole == "Student")">Students</option>
+                    <option value="Tutor" selected="@(ViewBag.CurrentRole == "Tutor")">Tutors</option>
+                    <option value="Company" selected="@(ViewBag.CurrentRole == "Company")">Companies</option>
+                    <option value="Admin" selected="@(ViewBag.CurrentRole == "Admin")">Admins</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search me-1"></i>Search</button>
+            </div>
+            <div class="col-md-2">
+                <a href="/Admin/ManageUsers" class="btn btn-outline-secondary w-100">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- User Table -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>DOB</th>
+                        <th>Details</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No users found.</td>
+                        </tr>
+                    }
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="user-avatar user-avatar-sm">@user.FullName[0]</span>
+                                    <span class="fw-medium">@user.FullName</span>
+                                </div>
+                            </td>
+                            <td class="text-muted small">@user.Email</td>
+                            <td>
+                                @{
+                                    var roleBadge = user.Role switch
+                                    {
+                                        SPMS.Models.UserRole.Admin => "bg-danger",
+                                        SPMS.Models.UserRole.Student => "bg-primary",
+                                        SPMS.Models.UserRole.Tutor => "bg-info",
+                                        SPMS.Models.UserRole.Company => "bg-warning text-dark",
+                                        _ => "bg-secondary"
+                                    };
+                                }
+                                <span class="badge @roleBadge">@user.Role</span>
+                            </td>
+                            <td class="text-muted small">@user.DOB.ToString("dd MMM yyyy")</td>
+                            <td class="small text-muted">
+                                @if (user.Role == SPMS.Models.UserRole.Student)
+                                {
+                                    <span>@user.StudentNumber &bull; @user.Program</span>
+                                }
+                                else if (user.Role == SPMS.Models.UserRole.Tutor)
+                                {
+                                    <span>@user.Department</span>
+                                }
+                                else if (user.Role == SPMS.Models.UserRole.Company)
+                                {
+                                    <span>@user.CompanyName</span>
+                                }
+                            </td>
+                            <td>
+                                @if (user.IsActive)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-1">
+                                    <a href="/Admin/EditUser/@user.Id" class="btn btn-sm btn-outline-primary" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form action="/Admin/ResetPassword" method="post" class="d-inline"
+                                          onsubmit="return confirm('Reset password to DOB-based password?')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@user.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Reset Password">
+                                            <i class="bi bi-key"></i>
+                                        </button>
+                                    </form>
+                                    <form action="/Admin/ToggleUserStatus" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@user.Id" />
+                                        <button type="submit" class="btn btn-sm @(user.IsActive ? "btn-outline-secondary" : "btn-outline-success")" title="@(user.IsActive ? "Deactivate" : "Activate")">
+                                            <i class="bi @(user.IsActive ? "bi-toggle-on" : "bi-toggle-off")"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="mt-3 text-muted small">
+    Showing @Model.Count user(s)
+</div>

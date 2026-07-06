@@ -1,0 +1,32 @@
+@{ ViewData["Title"] = "Create Tutorial"; }
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="/Admin/Tutorials" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="fw-bold mb-0">Create Tutorial</h4>
+</div>
+
+<div class="row"><div class="col-lg-6">
+    <div class="card border-0 shadow-sm">
+        <div class="card-header koi-card-header py-3"><i class="bi bi-journal-plus me-2"></i>Tutorial Details</div>
+        <div class="card-body p-4">
+            <form method="post" action="/Admin/CreateTutorial">
+                @Html.AntiForgeryToken()
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Tutorial Name *</label>
+                    <input name="name" class="form-control" placeholder="e.g. Tuesday Morning Tutorial" required />
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-medium">Assign Tutor *</label>
+                    <select name="tutorId" class="form-select" required>
+                        <option value="">-- Select Tutor --</option>
+                        @foreach (var t in (List<SPMS.Models.User>)ViewBag.Tutors)
+                        {
+                            <option value="@t.Id">@t.FullName (@t.Email)</option>
+                        }
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-koi px-4"><i class="bi bi-check-circle me-1"></i>Create Tutorial</button>
+            </form>
+        </div>
+    </div>
+</div></div>

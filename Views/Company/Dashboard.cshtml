@@ -1,0 +1,354 @@
+@model List<SPMS.Models.Project>
+@{ ViewData["Title"] = "Company Dashboard"; }
+@Html.AntiForgeryToken()
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div><h4 class="fw-bold mb-0">Company Dashboard</h4><small class="text-muted">Welcome, @ViewBag.UserName</small></div>
+    <a href="/Company/SubmitProject" class="btn btn-koi"><i class="bi bi-plus-circle me-1"></i>Submit Project</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card stat-card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="stat-icon mb-2"><i class="bi bi-folder2-open"></i></div>
+                <h2 class="fw-bold mb-0">@ViewBag.TotalSubmitted</h2><small class="text-muted">Total Submitted</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="stat-icon mb-2"><i class="bi bi-clock"></i></div>
+                <h2 class="fw-bold mb-0">@ViewBag.Pending</h2><small class="text-muted">Pending Review</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="stat-icon mb-2"><i class="bi bi-check-circle"></i></div>
+                <h2 class="fw-bold mb-0">@ViewBag.Approved</h2><small class="text-muted">Admin Approved</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="stat-icon mb-2"><i class="bi bi-people"></i></div>
+                <h2 class="fw-bold mb-0">@ViewBag.Active</h2><small class="text-muted">Active with Groups</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header koi-card-header py-3 d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-folder me-2"></i>Recent Projects</span>
+        <a href="/Company/MyProjects" class="btn btn-sm btn-light">View All</a>
+    </div>
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-folder-plus display-4 opacity-25 d-block mb-3"></i>
+                <p>No projects yet. <a href="/Company/SubmitProject">Submit your first project</a></p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead><tr><th>Project</th><th>Status</th><th>Category</th><th>Group</th><th>Tutor</th><th>Checklist</th><th>Submitted</th></tr></thead>
+                    <tbody>
+                    @foreach (var p in Model)
+                    {
+                        var b = p.Status switch {
+                            ProjectStatus.PendingAdminReview => "bg-warning text-dark",
+                            ProjectStatus.AdminApproved => "bg-success",
+                            ProjectStatus.AdminRejected => "bg-danger",
+                            ProjectStatus.TutorReviewPending => "bg-info",
+                            ProjectStatus.TutorApproved => "bg-primary",
+                            _ => "bg-secondary"
+                        };
+                        <tr>
+                            <td><a href="/Company/ProjectDetails/@p.Id" class="fw-medium text-decoration-none">@p.Title</a></td>
+                            <td><span class="badge @b">@p.Status</span></td>
+                            <td>@(p.Category?.ToString() ?? "—")</td>
+                            @{
+                                var agDict = ViewBag.AssignedGroups as Dictionary<int, SPMS.Models.TutorialGroup>;
+                                var ag = agDict != null && agDict.ContainsKey(p.Id) ? agDict[p.Id] : null;
+                            }
+                            <td>@(ag != null ? ag.Name : "—")</td>
+                            <td>@(ag?.Tutorial?.Tutor?.FullName ?? "—")</td>
+                            <td>
+                                @{
+                                    var counts = ViewBag.ChecklistCounts as Dictionary<int, int>;
+                                    int done  = counts != null && counts.ContainsKey(p.Id) ? counts[p.Id] : 0;
+                                    int total = ViewBag.ChecklistTotal ?? 19;
+                                    int pct   = total > 0 ? (done * 100 / total) : 0;
+                                }
+                                <span class="checklist-link" style="cursor:pointer;"
+                                      data-project-id="@p.Id" data-project-title="@p.Title">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div style="width:60px;background:#e9ecef;border-radius:4px;height:8px;">
+                                            <div style="width:@(pct)%;background:#0d6efd;border-radius:4px;height:8px;"></div>
+                                        </div>
+                                        <small class="text-muted">@done/@total</small>
+                                    </div>
+                                </span>
+                            </td>
+                            <td class="small text-muted">@p.CreatedAt.ToString("dd MMM yyyy")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Group Members Modal -->
+<div class="modal fade" id="groupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header koi-card-header">
+                <h5 class="modal-title"><i class="bi bi-people me-2"></i><span id="groupModalTitle">Group</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6 class="fw-semibold mb-3">Members</h6>
+                <div id="groupMembersList" class="mb-3">
+                    <div class="text-muted small">Loading...</div>
+                </div>
+                <hr>
+                <h6 class="fw-semibold mb-2">Message Group Leader</h6>
+                <div id="noLeaderMsg" class="text-muted small d-none">No leader assigned yet.</div>
+                <form id="groupMessageForm" method="post" action="/Message/Send">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ReceiverId" id="groupLeaderId" />
+                    <div class="mb-2">
+                        <textarea name="Content" class="form-control" rows="3" placeholder="Type your message to the group leader..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-koi btn-sm"><i class="bi bi-send me-1"></i>Send Message</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tutor Message Modal -->
+<div class="modal fade" id="tutorModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header koi-card-header">
+                <h5 class="modal-title"><i class="bi bi-person-workspace me-2"></i>Message <span id="tutorModalName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-center gap-3 mb-3 p-3 bg-light rounded">
+                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center fw-bold" style="width:44px;height:44px;font-size:1.1rem;" id="tutorAvatar"></div>
+                    <div>
+                        <div class="fw-semibold" id="tutorDetailName"></div>
+                        <div class="small text-muted"><i class="bi bi-envelope me-1"></i><span id="tutorDetailEmail"></span></div>
+                        <div class="small text-muted" id="tutorDetailDept"></div>
+                        <div class="small text-muted" id="tutorDetailExpertise"></div>
+                    </div>
+                </div>
+                <form method="post" action="/Message/Send">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ReceiverId" id="tutorReceiverId" />
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Message</label>
+                        <textarea name="Content" class="form-control" rows="4" placeholder="Type your message..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-koi"><i class="bi bi-send me-1"></i>Send Message</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Checklist Modal -->
+<div class="modal fade" id="checklistModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header koi-card-header">
+                <h5 class="modal-title"><i class="bi bi-check2-square me-2"></i>Project Checklist – <span id="checklistProjectTitle"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="flex-grow-1" style="background:#e9ecef;border-radius:6px;height:10px;">
+                        <div id="checklistProgressBar" style="width:0%;background:#0d6efd;border-radius:6px;height:10px;transition:width .3s;"></div>
+                    </div>
+                    <small class="text-muted fw-semibold"><span id="checklistDoneCount">0</span>/<span id="checklistTotalCount">0</span> completed</small>
+                </div>
+                <div id="checklistBody">
+                    <div class="text-muted text-center py-4">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Group click → fetch members, show modal
+    document.querySelectorAll('.group-link').forEach(el => {
+        el.addEventListener('click', function () {
+            const groupId   = this.dataset.groupId;
+            const groupName = this.dataset.groupName;
+            document.getElementById('groupModalTitle').textContent = groupName;
+            document.getElementById('groupMembersList').innerHTML = '<div class="text-muted small">Loading...</div>';
+            document.getElementById('groupLeaderId').value = '';
+            document.getElementById('groupMessageForm').classList.remove('d-none');
+            document.getElementById('noLeaderMsg').classList.add('d-none');
+
+            fetch(`/Company/GroupInfo?groupId=${groupId}`)
+                .then(r => r.json())
+                .then(members => {
+                    if (!members.length) {
+                        document.getElementById('groupMembersList').innerHTML = '<div class="text-muted small">No members yet.</div>';
+                        document.getElementById('groupMessageForm').classList.add('d-none');
+                        document.getElementById('noLeaderMsg').classList.remove('d-none');
+                        return;
+                    }
+                    let html = '<ul class="list-group list-group-flush">';
+                    let leaderId = null;
+                    members.forEach(m => {
+                        html += `<li class="list-group-item px-0 py-2 d-flex align-items-center gap-2">
+                            <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:36px;height:36px;">${m.name.charAt(0)}</div>
+                            <div class="flex-grow-1">
+                                <div class="fw-medium">${m.name}</div>
+                                <div class="small text-muted"><i class="bi bi-envelope me-1"></i>${m.email || '—'}</div>
+                                ${m.studentNumber ? `<div class="small text-muted"><i class="bi bi-hash me-1"></i>${m.studentNumber} &nbsp;·&nbsp; ${m.program || ''}</div>` : ''}
+                            </div>
+                            ${m.isLeader ? '<span class="badge bg-warning text-dark">Leader</span>' : ''}
+                        </li>`;
+                        if (m.isLeader) leaderId = m.id;
+                    });
+                    html += '</ul>';
+                    document.getElementById('groupMembersList').innerHTML = html;
+
+                    if (leaderId) {
+                        document.getElementById('groupLeaderId').value = leaderId;
+                        document.getElementById('groupMessageForm').classList.remove('d-none');
+                        document.getElementById('noLeaderMsg').classList.add('d-none');
+                    } else {
+                        document.getElementById('groupMessageForm').classList.add('d-none');
+                        document.getElementById('noLeaderMsg').classList.remove('d-none');
+                    }
+                });
+
+            new bootstrap.Modal(document.getElementById('groupModal')).show();
+        });
+    });
+
+    // Tutor click → show message modal
+    document.querySelectorAll('.tutor-link').forEach(el => {
+        el.addEventListener('click', function () {
+            const name      = this.dataset.tutorName;
+            const email     = this.dataset.tutorEmail;
+            const dept      = this.dataset.tutorDept;
+            const expertise = this.dataset.tutorExpertise;
+            document.getElementById('tutorReceiverId').value       = this.dataset.tutorId;
+            document.getElementById('tutorModalName').textContent  = name;
+            document.getElementById('tutorAvatar').textContent     = name.charAt(0).toUpperCase();
+            document.getElementById('tutorDetailName').textContent = name;
+            document.getElementById('tutorDetailEmail').textContent = email || '—';
+            document.getElementById('tutorDetailDept').innerHTML   = dept      ? `<i class="bi bi-building me-1"></i>${dept}` : '';
+            document.getElementById('tutorDetailExpertise').innerHTML = expertise ? `<i class="bi bi-mortarboard me-1"></i>${expertise}` : '';
+            new bootstrap.Modal(document.getElementById('tutorModal')).show();
+        });
+    });
+
+    // Checklist click → fetch items, show modal
+    let currentChecklistProjectId = null;
+
+    document.querySelectorAll('.checklist-link').forEach(el => {
+        el.addEventListener('click', function () {
+            currentChecklistProjectId = this.dataset.projectId;
+            document.getElementById('checklistProjectTitle').textContent = this.dataset.projectTitle;
+            document.getElementById('checklistBody').innerHTML = '<div class="text-muted text-center py-4">Loading...</div>';
+            document.getElementById('checklistProgressBar').style.width = '0%';
+            document.getElementById('checklistDoneCount').textContent = '0';
+            document.getElementById('checklistTotalCount').textContent = '0';
+
+            fetch(`/Company/GetChecklist?projectId=${currentChecklistProjectId}`)
+                .then(r => r.json())
+                .then(data => renderChecklist(data));
+
+            new bootstrap.Modal(document.getElementById('checklistModal')).show();
+        });
+    });
+
+    function renderChecklist(data) {
+        updateProgress(data.checkedCount, data.total);
+        let html = '';
+        data.sections.forEach(s => {
+            html += `<div class="mb-3">
+                <div class="fw-semibold text-secondary small text-uppercase mb-2" style="letter-spacing:.5px;">${s.section}</div>`;
+            s.items.forEach(item => {
+                let fileHtml = '';
+                if (item.filePath) {
+                    const uploadedAt = item.uploadedAt
+                        ? new Date(item.uploadedAt).toLocaleDateString('en-AU', { day:'2-digit', month:'short', year:'numeric' })
+                        : '';
+                    fileHtml = `<div class="ps-4 ms-2 mt-1 small">
+                        <i class="bi bi-paperclip text-primary me-1"></i>
+                        <a href="/${item.filePath}" target="_blank" class="text-decoration-none">${item.originalFileName || 'Download'}</a>
+                        ${uploadedAt ? `<span class="text-muted ms-2" style="font-size:.75rem">uploaded ${uploadedAt}</span>` : ''}
+                    </div>`;
+                }
+                html += `<div class="form-check ps-4 mb-1">
+                    <input class="form-check-input checklist-item" type="checkbox"
+                           id="cl_${item.key}" data-key="${item.key}"
+                           ${item.isChecked ? 'checked' : ''}>
+                    <label class="form-check-label ${item.isChecked ? 'text-decoration-line-through text-muted' : ''}"
+                           for="cl_${item.key}">${item.label}</label>
+                </div>${fileHtml}`;
+            });
+            html += '</div>';
+        });
+        document.getElementById('checklistBody').innerHTML = html;
+
+        // Attach toggle listeners
+        document.querySelectorAll('.checklist-item').forEach(cb => {
+            cb.addEventListener('change', function () {
+                const key = this.dataset.key;
+                const label = this.nextElementSibling;
+                fetch(`/Company/ToggleChecklistItem`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded',
+                               'RequestVerificationToken': document.querySelector('input[name=__RequestVerificationToken]')?.value || '' },
+                    body: `projectId=${currentChecklistProjectId}&itemKey=${key}`
+                })
+                .then(r => r.json())
+                .then(res => {
+                    updateProgress(res.checkedCount, @(ViewBag.ChecklistTotal ?? 19));
+                    // Update the mini progress bar in the table row
+                    const rowBadge = document.querySelector(`.checklist-link[data-project-id="${currentChecklistProjectId}"]`);
+                    if (rowBadge) {
+                        const total = @(ViewBag.ChecklistTotal ?? 19);
+                        const pct = Math.round(res.checkedCount * 100 / total);
+                        rowBadge.querySelector('div > div:last-child').style.width = pct + '%';
+                        rowBadge.querySelector('small').textContent = `${res.checkedCount}/${total}`;
+                    }
+                    // Re-render so any file display reflects the new state (unchecking deletes the file).
+                    fetch(`/Company/GetChecklist?projectId=${currentChecklistProjectId}`)
+                        .then(r => r.json())
+                        .then(data => renderChecklist(data));
+                });
+            });
+        });
+    }
+
+    function updateProgress(done, total) {
+        const pct = total > 0 ? Math.round(done * 100 / total) : 0;
+        document.getElementById('checklistProgressBar').style.width = pct + '%';
+        document.getElementById('checklistDoneCount').textContent = done;
+        document.getElementById('checklistTotalCount').textContent = total;
+    }
+</script>
+}

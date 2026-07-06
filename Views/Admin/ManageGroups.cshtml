@@ -1,0 +1,37 @@
+@model List<SPMS.Models.TutorialGroup>
+@using SPMS.Models
+@{ ViewData["Title"] = "Student Groups"; }
+<div class="mb-4"><h4 class="fw-bold mb-0">Student Groups</h4><small class="text-muted">All tutorial groups across all tutorials</small></div>
+<div class="card border-0 shadow-sm"><div class="card-body p-0"><div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+        <thead><tr><th>Group Name</th><th>Tutorial</th><th>Tutor</th><th>Members</th><th>Status</th><th>Approved Project</th><th>Created</th></tr></thead>
+        <tbody>
+        @if (!Model.Any())
+        {<tr><td colspan="7" class="text-center text-muted py-4">No groups yet.</td></tr>}
+        @foreach (var g in Model)
+        {
+            var b = g.Status switch {
+                TutorialGroupStatus.Forming          => "bg-secondary",
+                TutorialGroupStatus.Ready            => "bg-info",
+                TutorialGroupStatus.AwaitingApproval => "bg-warning text-dark",
+                TutorialGroupStatus.Approved         => "bg-success",
+                TutorialGroupStatus.Rejected         => "bg-danger",
+                _                                    => "bg-secondary"
+            };
+            <tr>
+                <td class="fw-medium">@g.Name</td>
+                <td class="small">@g.Tutorial?.Name</td>
+                <td class="small">@g.Tutorial?.Tutor?.FullName</td>
+                <td>
+                    @foreach (var m in g.Members)
+                    {<span class="badge bg-light text-dark border me-1">@m.Student!.FullName @(m.IsLeader ? "★" : "")</span>}
+                    <small class="text-muted">(@g.Members.Count)</small>
+                </td>
+                <td><span class="badge @b">@g.Status</span></td>
+                <td class="small">@(g.ApprovedProject?.Title ?? "—")</td>
+                <td class="small text-muted">@g.CreatedAt.ToString("dd MMM yyyy")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div></div></div>

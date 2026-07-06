@@ -1,0 +1,59 @@
+@model SPMS.Models.SubmitProjectVM
+@{ ViewData["Title"] = "Submit Project"; }
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="/Company/Dashboard" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="fw-bold mb-0">Submit New Project</h4>
+</div>
+<div class="row"><div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+        <div class="card-header koi-card-header py-3"><i class="bi bi-plus-circle me-2"></i>Project Details</div>
+        <div class="card-body p-4">
+            <form asp-action="SubmitProject" asp-controller="Company" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger small py-2"></div>
+                <div class="mb-3">
+                    <label asp-for="Title" class="form-label fw-medium">Project Title *</label>
+                    <input asp-for="Title" class="form-control" placeholder="Enter a clear project title" />
+                    <span asp-validation-for="Title" class="text-danger small"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label fw-medium">Project Description *</label>
+                    <textarea asp-for="Description" class="form-control" rows="7" placeholder="Describe the project, goals, skills required..."></textarea>
+                    <span asp-validation-for="Description" class="text-danger small"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Category" class="form-label fw-medium">Category (optional)</label>
+                    <select asp-for="Category" class="form-select">
+                        <option value="">— Select a category —</option>
+                        <option value="Internal">Internal</option>
+                        <option value="External">External</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label asp-for="File" class="form-label fw-medium">Attachment (optional)</label>
+                    <input asp-for="File" class="form-control" type="file" accept=".pdf,.doc,.docx,.zip,.pptx" />
+                    <div class="form-text">PDF, Word, PowerPoint or ZIP (max 50MB)</div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-koi px-4"><i class="bi bi-send me-1"></i>Submit to Admin</button>
+                    <a href="/Company/Dashboard" class="btn btn-outline-secondary px-4">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="col-lg-4 mt-3 mt-lg-0">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <h6 class="fw-bold mb-3 text-koi-blue"><i class="bi bi-info-circle me-2"></i>Submission Process</h6>
+            <ol class="small text-muted ps-3">
+                <li class="mb-2">You submit the project to Admin</li>
+                <li class="mb-2">Admin reviews and approves or rejects</li>
+                <li class="mb-2">Approved projects are visible to all students</li>
+                <li class="mb-2">Students (in groups of 3–5) select your project</li>
+                <li class="mb-2">A group requests a tutor to supervise</li>
+                <li>Tutor approves the group — work begins!</li>
+            </ol>
+        </div>
+    </div>
+</div></div>

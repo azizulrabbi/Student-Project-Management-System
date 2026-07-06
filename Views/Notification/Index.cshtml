@@ -1,0 +1,85 @@
+@model List<SPMS.Models.Notification>
+@{ ViewData["Title"] = "Notifications"; }
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0"><i class="bi bi-bell me-2 text-primary"></i>Notifications</h2>
+    @if (Model.Any(n => !n.IsRead))
+    {
+        <form action="/Notification/MarkAllRead" method="post">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-check2-all me-1"></i>Mark All Read
+            </button>
+        </form>
+    }
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-bell-slash display-3 opacity-25 d-block mb-3"></i>
+            <h5 class="text-muted">No Notifications</h5>
+            <p class="text-muted small">You're all caught up! No new notifications.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="list-group list-group-flush">
+            @foreach (var n in Model)
+            {
+                <div class="list-group-item list-group-item-action @(!n.IsRead ? "bg-light" : "") d-flex align-items-start gap-3 py-3 px-4">
+                    <div class="mt-1">
+                        @if (!n.IsRead)
+                        {
+                            <span class="badge rounded-pill bg-primary" style="width:10px;height:10px;padding:0;display:inline-block"></span>
+                        }
+                        else
+                        {
+                            <span class="text-muted"><i class="bi bi-check2"></i></span>
+                        }
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="fw-semibold @(!n.IsRead ? "" : "text-muted")">@n.Title</div>
+                            <small class="text-muted ms-3 text-nowrap">@n.CreatedAt.ToString("dd MMM, HH:mm")</small>
+                        </div>
+                        <div class="small text-muted mt-1">@n.Body</div>
+                        <div class="d-flex gap-2 mt-2">
+                            @if (!string.IsNullOrEmpty(n.Link))
+                            {
+                                <a href="@n.Link" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:.75rem">
+                                    <i class="bi bi-arrow-right me-1"></i>View
+                                </a>
+                            }
+                            @if (!n.IsRead)
+                            {
+                                <form action="/Notification/MarkRead" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@n.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:.75rem">
+                                        Mark Read
+                                    </button>
+                                </form>
+                            }
+                            <form action="/Notification/Delete" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@n.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size:.75rem"
+                                        onclick="return confirm('Delete this notification?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="mt-2 text-muted small">
+        @Model.Count(n => !n.IsRead) unread of @Model.Count notifications
+    </div>
+}

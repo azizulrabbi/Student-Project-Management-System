@@ -1,0 +1,77 @@
+@model SPMS.Models.SubmitProjectVM
+@{
+    ViewData["Title"] = "Edit Project";
+    var existingFilePath = ViewBag.ExistingFilePath as string;
+    var projectId = (int)ViewBag.ProjectId;
+}
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="/Company/ProjectDetails/@projectId" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="fw-bold mb-0">Edit Project</h4>
+    <span class="badge bg-warning text-dark">Pending Admin Review</span>
+</div>
+<div class="row"><div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+        <div class="card-header koi-card-header py-3"><i class="bi bi-pencil-square me-2"></i>Project Details</div>
+        <div class="card-body p-4">
+            <div class="alert alert-info small py-2">
+                <i class="bi bi-info-circle me-1"></i>You can edit this project until an admin reviews it.
+            </div>
+            <form asp-action="EditProject" asp-controller="Company" asp-route-id="@projectId" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger small py-2"></div>
+                <div class="mb-3">
+                    <label asp-for="Title" class="form-label fw-medium">Project Title *</label>
+                    <input asp-for="Title" class="form-control" />
+                    <span asp-validation-for="Title" class="text-danger small"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label fw-medium">Project Description *</label>
+                    <textarea asp-for="Description" class="form-control" rows="7"></textarea>
+                    <span asp-validation-for="Description" class="text-danger small"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Category" class="form-label fw-medium">Category</label>
+                    <select asp-for="Category" asp-items="Html.GetEnumSelectList<SPMS.Models.ProjectCategory>()" class="form-select">
+                        <option value="">— Not specified —</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-medium">Attachment</label>
+                    @if (!string.IsNullOrEmpty(existingFilePath))
+                    {
+                        <div class="d-flex align-items-center gap-2 mb-2 p-2 bg-light rounded">
+                            <i class="bi bi-paperclip text-koi-blue"></i>
+                            <a href="/@existingFilePath" target="_blank" class="small text-koi-blue text-decoration-none flex-grow-1">
+                                @System.IO.Path.GetFileName(existingFilePath)
+                            </a>
+                            <div class="form-check form-check-inline mb-0">
+                                <input class="form-check-input" type="checkbox" name="removeExistingFile" id="removeExistingFile" value="true" />
+                                <label class="form-check-label small text-danger" for="removeExistingFile">Remove</label>
+                            </div>
+                        </div>
+                        <div class="form-text small mb-1">Upload a new file below to replace, or tick "Remove" to delete it.</div>
+                    }
+                    <input asp-for="File" class="form-control" type="file" accept=".pdf,.doc,.docx,.zip,.pptx" />
+                    <div class="form-text">PDF, Word, PowerPoint or ZIP (max 50MB)</div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-koi px-4"><i class="bi bi-save me-1"></i>Save Changes</button>
+                    <a href="/Company/ProjectDetails/@projectId" class="btn btn-outline-secondary px-4">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="col-lg-4 mt-3 mt-lg-0">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <h6 class="fw-bold mb-3 text-koi-blue"><i class="bi bi-info-circle me-2"></i>Editing Window</h6>
+            <p class="small text-muted mb-2">
+                Projects can be edited only while their status is <strong>Pending Admin Review</strong>.
+            </p>
+            <p class="small text-muted mb-0">
+                Once an admin approves or rejects the project, the title, description, category, and attachments are locked.
+            </p>
+        </div>
+    </div>
+</div></div>

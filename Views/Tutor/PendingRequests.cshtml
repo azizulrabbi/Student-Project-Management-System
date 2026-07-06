@@ -1,0 +1,100 @@
+@using SPMS.Models
+@{
+    ViewData["Title"] = "Pending Requests";
+    var groupRequests   = ViewBag.GroupRequests   as List<TutorialGroupRequest>        ?? new List<TutorialGroupRequest>();
+    var projectRequests = ViewBag.ProjectRequests as List<TutorialGroupProjectRequest> ?? new List<TutorialGroupProjectRequest>();
+    bool hasAny = groupRequests.Any() || projectRequests.Any();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div><h4 class="fw-bold mb-0">Pending Requests</h4><small class="text-muted">Groups requesting your approval</small></div>
+    <a href="/Tutor/Dashboard" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Dashboard</a>
+</div>
+
+@if (TempData["Success"] != null)
+{<div class="alert alert-success">@TempData["Success"]</div>}
+@if (TempData["Error"] != null)
+{<div class="alert alert-danger">@TempData["Error"]</div>}
+
+@if (!hasAny)
+{
+    <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>No pending requests at this time.</div>
+}
+else
+{
+    <div class="row g-3">
+
+        @* ── Tutorial Group Approval Requests ── *@
+        @foreach (var req in groupRequests)
+        {
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header koi-card-header py-3 d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-people me-2"></i>@req.TutorialGroup!.Name</span>
+                        <span class="badge bg-warning text-dark">Group Approval</span>
+                    </div>
+                    <div class="card-body p-4">
+                        <p class="mb-1"><strong>Tutorial:</strong> @req.TutorialGroup.Tutorial?.Name</p>
+                        <p class="mb-1 text-muted small"><strong>Members:</strong> @req.TutorialGroup.Members.Count</p>
+                        <ul class="list-unstyled mb-2 small">
+                            @foreach (var m in req.TutorialGroup.Members)
+                            {<li><i class="bi bi-person me-1 text-muted"></i>@m.Student?.FullName @(m.IsLeader ? "(Leader)" : "")</li>}
+                        </ul>
+                        @if (!string.IsNullOrEmpty(req.Message))
+                        {<p class="text-muted small mb-2"><em>"@req.Message"</em></p>}
+                        <p class="mb-3 text-muted small"><i class="bi bi-clock me-1"></i>@req.RequestedAt.ToString("dd MMM yyyy, h:mm tt")</p>
+                        <form method="post" action="/Tutor/ApproveTutorialGroup" class="mb-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="requestId" value="@req.Id" />
+                            <textarea name="tutorFeedback" class="form-control form-control-sm mb-2" rows="2" placeholder="Feedback (optional)"></textarea>
+                            <button type="submit" class="btn btn-success w-100 btn-sm"><i class="bi bi-check-circle me-1"></i>Approve Group</button>
+                        </form>
+                        <form method="post" action="/Tutor/RejectTutorialGroup">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="requestId" value="@req.Id" />
+                            <textarea name="tutorFeedback" class="form-control form-control-sm mb-2" rows="2" placeholder="Reason for rejection"></textarea>
+                            <button type="submit" class="btn btn-outline-danger w-100 btn-sm"><i class="bi bi-x-circle me-1"></i>Reject</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* ── Tutorial Project Approval Requests ── *@
+        @foreach (var req in projectRequests)
+        {
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header koi-card-header py-3 d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-folder me-2"></i>@req.TutorialGroup!.Name</span>
+                        <span class="badge bg-info text-dark">Project Request</span>
+                    </div>
+                    <div class="card-body p-4">
+                        <p class="mb-1"><strong>Project:</strong> @req.Project?.Title</p>
+                        <p class="mb-1 text-muted small"><strong>Company:</strong> @req.Project?.Company?.FullName</p>
+                        <p class="mb-1 text-muted small"><strong>Tutorial:</strong> @req.TutorialGroup.Tutorial?.Name</p>
+                        <p class="mb-1 text-muted small"><strong>Members:</strong> @req.TutorialGroup.Members.Count</p>
+                        <ul class="list-unstyled mb-2 small">
+                            @foreach (var m in req.TutorialGroup.Members)
+                            {<li><i class="bi bi-person me-1 text-muted"></i>@m.Student?.FullName @(m.IsLeader ? "(Leader)" : "")</li>}
+                        </ul>
+                        <p class="mb-3 text-muted small"><i class="bi bi-clock me-1"></i>@req.RequestedAt.ToString("dd MMM yyyy, h:mm tt")</p>
+                        <form method="post" action="/Tutor/ApproveTutorialProjectRequest" class="mb-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="requestId" value="@req.Id" />
+                            <textarea name="tutorFeedback" class="form-control form-control-sm mb-2" rows="2" placeholder="Feedback (optional)"></textarea>
+                            <button type="submit" class="btn btn-success w-100 btn-sm"><i class="bi bi-check-circle me-1"></i>Approve Project</button>
+                        </form>
+                        <form method="post" action="/Tutor/RejectTutorialProjectRequest">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="requestId" value="@req.Id" />
+                            <textarea name="tutorFeedback" class="form-control form-control-sm mb-2" rows="2" placeholder="Reason for rejection"></textarea>
+                            <button type="submit" class="btn btn-outline-danger w-100 btn-sm"><i class="bi bi-x-circle me-1"></i>Reject</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+
+    </div>
+}

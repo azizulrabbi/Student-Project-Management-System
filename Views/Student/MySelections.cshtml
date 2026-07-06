@@ -1,0 +1,54 @@
+@model List<SPMS.Models.StudentProjectSelection>
+@{ ViewData["Title"] = "My Selected Projects"; }
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div><h4 class="fw-bold mb-0">My Selected Projects</h4><small class="text-muted">You can select 1 project</small></div>
+    <a href="/Student/BrowseProjects" class="btn btn-koi"><i class="bi bi-search me-1"></i>Browse More</a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>You haven't selected any projects yet.
+        <a href="/Student/BrowseProjects" class="alert-link">Browse available projects</a>.
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var sel in Model)
+        {
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header koi-card-header py-3 d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-bookmark-fill me-2"></i>@sel.Project!.Title</span>
+                        <span class="badge bg-light text-dark">@sel.Project.Category</span>
+                    </div>
+                    <div class="card-body p-4">
+                        <p class="text-muted small mb-1"><i class="bi bi-building me-1"></i>@sel.Project.Company?.FullName</p>
+                        <p class="small mb-3">@sel.Project.Description</p>
+                        @if (!string.IsNullOrEmpty(sel.Project.FilePath))
+                        {
+                            <a href="/@sel.Project.FilePath" target="_blank" class="btn btn-sm btn-outline-secondary mb-3 w-100">
+                                <i class="bi bi-file-earmark-arrow-down me-1"></i>Download Brief
+                            </a>
+                        }
+                        <p class="text-muted small mb-3"><i class="bi bi-clock me-1"></i>Selected: @sel.SelectedAt.ToString("dd MMM yyyy")</p>
+                        <form method="post" action="/Student/DeselectProject">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="projectId" value="@sel.ProjectId" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger w-100"
+                                    onclick="return confirm('Remove this project from your selections?')">
+                                <i class="bi bi-bookmark-dash me-1"></i>Remove Selection
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="alert alert-success mt-4">
+        <i class="bi bi-check-circle me-2"></i>You have selected your project. You can now join or create a group and request a tutor.
+    </div>
+}

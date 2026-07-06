@@ -1,0 +1,97 @@
+@model List<SPMS.Models.TutorialWeeklyProgress>
+@{
+    ViewData["Title"] = "Weekly Progress";
+    var group     = ViewBag.Group as SPMS.Models.TutorialGroup;
+    int nextWeek  = ViewBag.NextWeek ?? 1;
+    bool canSubmit = ViewBag.CanSubmit ?? false;
+    bool isLeader  = ViewBag.IsLeader ?? false;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">Weekly Progress</h4>
+        <small class="text-muted">@group?.Name &mdash; @group?.ApprovedProject?.Title</small>
+    </div>
+    <a href="/Student/MyTutorial" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+@if (TempData["Success"] != null) {<div class="alert alert-success">@TempData["Success"]</div>}
+@if (TempData["Error"]   != null) {<div class="alert alert-danger">@TempData["Error"]</div>}
+
+@if (isLeader && canSubmit)
+{
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header koi-card-header py-3"><i class="bi bi-pencil-square me-2"></i>Submit Week @nextWeek Update</div>
+        <div class="card-body p-4">
+            <form method="post" action="/Student/SubmitTutorialWeeklyProgress" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="TutorialGroupId" value="@group!.Id" />
+                <input type="hidden" name="ProjectId" value="@group.ApprovedProject!.Id" />
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">What did your group work on this week?</label>
+                    <textarea name="StudentUpdate" class="form-control" rows="5" placeholder="Describe your progress, tasks completed, and any challenges..." required></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Attach a file <span class="text-muted fw-normal">(optional — PDF, Word, ZIP, image, max 50MB)</span></label>
+                    <input type="file" name="File" class="form-control" accept=".pdf,.doc,.docx,.zip,.pptx,.png,.jpg,.jpeg" />
+                </div>
+                <button type="submit" class="btn btn-koi"><i class="bi bi-send me-1"></i>Submit Week @nextWeek</button>
+            </form>
+        </div>
+    </div>
+}
+else if (isLeader && !canSubmit)
+{
+    <div class="alert alert-warning mb-4">
+        <i class="bi bi-hourglass-split me-2"></i>
+        Waiting for tutor feedback on Week @(nextWeek - 1) before you can submit Week @nextWeek.
+    </div>
+}
+else
+{
+    <div class="alert alert-info mb-4">
+        <i class="bi bi-info-circle me-2"></i>Only the group leader can submit weekly progress.
+    </div>
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-light border text-muted small"><i class="bi bi-inbox me-2"></i>No progress entries yet.</div>
+}
+else
+{
+    <h6 class="fw-bold text-muted mb-3">Progress History</h6>
+    <div class="d-flex flex-column gap-3">
+        @foreach (var entry in Model)
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-header koi-card-header py-2 d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold"><i class="bi bi-calendar-week me-2"></i>Week @entry.WeekNumber</span>
+                    <span class="small text-muted">@entry.StudentSubmittedAt.ToString("dd MMM yyyy, h:mm tt")</span>
+                </div>
+                <div class="card-body p-4">
+                    <p class="small text-muted mb-1">Submitted by <strong>@entry.SubmittedByStudent?.FullName</strong></p>
+                    <p class="mb-3" style="white-space:pre-wrap;">@entry.StudentUpdate</p>
+                    @if (!string.IsNullOrEmpty(entry.FilePath))
+                    {
+                        <a href="/@entry.FilePath" target="_blank" class="btn btn-sm btn-outline-secondary mb-3">
+                            <i class="bi bi-file-earmark-arrow-down me-1"></i>@(entry.OriginalFileName ?? "Download Attachment")
+                        </a>
+                    }
+                    @if (entry.TutorFeedback != null)
+                    {
+                        <div class="p-3 rounded" style="background:#f0f7ff;border-left:4px solid #1976d2;">
+                            <div class="small fw-semibold text-primary mb-1"><i class="bi bi-chat-square-text me-1"></i>Tutor Feedback</div>
+                            <p class="mb-0 small">@entry.TutorFeedback</p>
+                            <div class="small text-muted mt-1">@entry.TutorRespondedAt?.ToString("dd MMM yyyy")</div>
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Awaiting tutor feedback</span>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}

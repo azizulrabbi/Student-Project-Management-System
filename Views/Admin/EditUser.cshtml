@@ -1,0 +1,149 @@
+@model SPMS.Models.EditUserVM
+@{ ViewData["Title"] = "Edit User"; }
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="/Admin/ManageUsers" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <h2 class="fw-bold mb-0">Edit User</h2>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header koi-card-header py-3">
+                <h5 class="mb-0 fw-semibold"><i class="bi bi-pencil-square me-2 text-primary"></i>Edit User Details</h5>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="EditUser" asp-controller="Admin" method="post">
+                    @Html.AntiForgeryToken()
+                    <input asp-for="Id" type="hidden" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger small py-2"></div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="FullName" class="form-label fw-medium">Full Name *</label>
+                            <input asp-for="FullName" class="form-control" />
+                            <span asp-validation-for="FullName" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label fw-medium">Email Address *</label>
+                            <input asp-for="Email" class="form-control" />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Role" class="form-label fw-medium">Role *</label>
+                            <select asp-for="Role" class="form-select" id="roleSelect" onchange="toggleRoleFields()">
+                                <option value="Student">Student</option>
+                                <option value="Tutor">Tutor</option>
+                                <option value="Company">Company</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="DOB" class="form-label fw-medium">Date of Birth *</label>
+                            <input asp-for="DOB" class="form-control" type="date" />
+                            <span asp-validation-for="DOB" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Phone" class="form-label fw-medium">Phone</label>
+                            <input asp-for="Phone" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-medium">Account Status</label>
+                            <div class="form-check form-switch mt-2">
+                                <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch" />
+                                <label asp-for="IsActive" class="form-check-label">Active</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Student Fields -->
+                    <div id="studentFields" class="mt-3 p-3 bg-light rounded" style="display:@(Model.Role == SPMS.Models.UserRole.Student ? "" : "none")">
+                        <h6 class="fw-semibold mb-3 text-primary"><i class="bi bi-mortarboard me-2"></i>Student Details</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label asp-for="StudentNumber" class="form-label fw-medium">Student Number</label>
+                                <input asp-for="StudentNumber" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Program" class="form-label fw-medium">Program</label>
+                                <input asp-for="Program" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Semester" class="form-label fw-medium">Semester</label>
+                                <input asp-for="Semester" class="form-control" type="number" min="1" max="12" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tutor Fields -->
+                    <div id="tutorFields" class="mt-3 p-3 bg-light rounded" style="display:@(Model.Role == SPMS.Models.UserRole.Tutor ? "" : "none")">
+                        <h6 class="fw-semibold mb-3 text-info"><i class="bi bi-person-badge me-2"></i>Tutor Details</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="Department" class="form-label fw-medium">Department</label>
+                                <input asp-for="Department" class="form-control" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Expertise" class="form-label fw-medium">Expertise</label>
+                                <input asp-for="Expertise" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Company Fields -->
+                    <div id="companyFields" class="mt-3 p-3 bg-light rounded" style="display:@(Model.Role == SPMS.Models.UserRole.Company ? "" : "none")">
+                        <h6 class="fw-semibold mb-3 text-warning"><i class="bi bi-building me-2"></i>Company Details</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label asp-for="CompanyName" class="form-label fw-medium">Company Name</label>
+                                <input asp-for="CompanyName" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Industry" class="form-label fw-medium">Industry</label>
+                                <input asp-for="Industry" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="ABN" class="form-label fw-medium">ABN</label>
+                                <input asp-for="ABN" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-koi px-4">
+                            <i class="bi bi-check-lg me-1"></i>Save Changes
+                        </button>
+                        <a href="/Admin/ManageUsers" class="btn btn-outline-secondary px-4">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h6 class="fw-semibold mb-3"><i class="bi bi-key me-2 text-warning"></i>Password Reset</h6>
+                <p class="small text-muted">Reset user's password back to the DOB-based default password.</p>
+                <form action="/Admin/ResetPassword" method="post" onsubmit="return confirm('Reset this user\u2019s password to DOB-based password?')">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <button type="submit" class="btn btn-outline-warning w-100">
+                        <i class="bi bi-key me-1"></i>Reset to Default Password
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function toggleRoleFields() {
+    const role = document.getElementById('roleSelect').value;
+    document.getElementById('studentFields').style.display = role === 'Student' ? '' : 'none';
+    document.getElementById('tutorFields').style.display = role === 'Tutor' ? '' : 'none';
+    document.getElementById('companyFields').style.display = role === 'Company' ? '' : 'none';
+}
+</script>
+}

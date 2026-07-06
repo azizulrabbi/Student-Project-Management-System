@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - KOI SPMS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+
+@{
+    var userRole   = Context.Session.GetString("UserRole") ?? "";
+    var userName   = Context.Session.GetString("UserName") ?? "";
+    var userEmail  = Context.Session.GetString("UserEmail") ?? "";
+    var userId     = Context.Session.GetInt32("UserId");
+    var isLoggedIn = userId.HasValue;
+    var isAdmin    = userRole == "Admin";
+
+    int unreadMsgs = 0;
+    int unreadNtfs = 0;
+    SPMS.Models.User? currentUser = null;
+    if (isLoggedIn)
+    {
+        var db = Context.RequestServices.GetRequiredService<SPMS.Data.AppDbContext>();
+        currentUser = db.Users.FirstOrDefault(u => u.Id == userId);
+        if (!isAdmin)
+        {
+            unreadMsgs = db.Messages.Count(m => m.ReceiverId == userId && !m.IsRead);
+            unreadNtfs = db.Notifications.Count(n => n.UserId == userId && !n.IsRead);
+        }
+    }
+
+    string? roleLabel = null;
+    string? roleValue = null;
+    if (currentUser != null)
+    {
+        switch (userRole)
+        {
+            case "Student":
+                roleLabel = "Student #"; roleValue = currentUser.StudentNumber; break;
+            case "Tutor":
+                roleLabel = "Department"; roleValue = currentUser.Department; break;
+            case "Company":
+                roleLabel = "Company"; roleValue = currentUser.CompanyName; break;
+        }
+    }
+}
+
+<!-- KOI Top Strip -->
+<div class="koi-top-strip d-none d-md-block">
+    <div class="container-fluid px-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-geo-alt me-1"></i>Sydney &amp; Newcastle Campuses</span>
+            <div class="d-flex gap-3">
+                <a href="mailto:ask@koi.edu.au"><i class="bi bi-envelope me-1"></i>ask@koi.edu.au</a>
+                <a href="tel:0292833583"><i class="bi bi-telephone me-1"></i>(02) 9283 3583</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- KOI Main Navbar -->
+<nav class="navbar navbar-expand-lg koi-navbar shadow-sm">
+    <div class="container-fluid px-4">
+        <!-- KOI Logo -->
+        <a class="navbar-brand" href="@(isLoggedIn ? (isAdmin ? "/Admin/Index" : (userRole == "Student" ? "/Student/Dashboard" : (userRole == "Tutor" ? "/Tutor/Dashboard" : "/Company/Dashboard"))) : "/Account/Login")">
+            <img src="https://marketinghub.koi.edu.au/wp-content/uploads/2023/08/KOI-Official-Primary-Logo-1.png"
+                 alt="King's Own Institute"
+                 style="height:50px;width:auto;" />
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+            <i class="bi bi-list fs-4 text-koi-blue"></i>
+        </button>
+
+        @if (isLoggedIn)
+        {
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3">
+
+                    @if (isAdmin)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Admin/Index"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Admin/ManageUsers"><i class="bi bi-people me-1"></i>Users</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Admin/ManageProjects"><i class="bi bi-folder me-1"></i>Projects</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Admin/ManageGroups"><i class="bi bi-diagram-3 me-1"></i>Groups</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Admin/Tutorials"><i class="bi bi-journal-bookmark me-1"></i>Tutorials</a>
+                        </li>
+                    }
+
+                    @if (userRole == "Student")
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Student/Dashboard"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Student/BrowseProjects"><i class="bi bi-search me-1"></i>Browse Projects</a>
+                        </li>
+                        @* Legacy "Project Team" link hidden — students should use Tutorial Class for grouping. Route /Student/Groups still exists for internal redirects. *@
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Student/MyTutorial"><i class="bi bi-journal-bookmark me-1"></i>Tutorial Class</a>
+                        </li>
+                    }
+
+                    @if (userRole == "Tutor")
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Tutor/Dashboard"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Tutor/PendingRequests"><i class="bi bi-clock me-1"></i>Requests</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Tutor/ActiveGroups"><i class="bi bi-people me-1"></i>Active Groups</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Tutor/MyTutorials"><i class="bi bi-journal-bookmark me-1"></i>Tutorials</a>
+                        </li>
+                    }
+
+                    @if (userRole == "Company")
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Company/Dashboard"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a>
+                        </li>
+                    }
+
+                </ul>
+
+                <ul class="navbar-nav ms-auto align-items-center gap-2">
+
+                    @if (!isAdmin)
+                    {
+                        <!-- Messages -->
+                        <li class="nav-item nav-icon-btn">
+                            <a class="nav-link px-2" href="/Message/Index" title="Messages">
+                                <i class="bi bi-chat-dots fs-5 text-koi-blue"></i>
+                                @if (unreadMsgs > 0)
+                                {
+                                    <span class="badge bg-danger rounded-pill">@unreadMsgs</span>
+                                }
+                            </a>
+                        </li>
+
+                        <!-- Notifications -->
+                        <li class="nav-item nav-icon-btn">
+                            <a class="nav-link px-2" href="/Notification/Index" title="Notifications">
+                                <i class="bi bi-bell fs-5 text-koi-blue"></i>
+                                @if (unreadNtfs > 0)
+                                {
+                                    <span class="badge bg-danger rounded-pill">@unreadNtfs</span>
+                                }
+                            </a>
+                        </li>
+
+                        <!-- Contact Us -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Contact/Index"><i class="bi bi-telephone me-1"></i>Contact Us</a>
+                        </li>
+                    }
+
+                    <!-- Divider -->
+                    <li class="nav-item d-none d-lg-block"><span class="text-muted" style="font-size:1.3rem">|</span></li>
+
+                    <!-- User Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 pe-0" href="#" data-bs-toggle="dropdown">
+                            <span class="koi-avatar">@(userName.Length > 0 ? userName[0].ToString().ToUpper() : "?")</span>
+                            <span class="d-none d-md-inline fw-700" style="color:#333;font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@userName</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width:260px">
+                            <li>
+                                <div class="dropdown-item-text px-3 py-2">
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <span class="koi-avatar" style="width:40px;height:40px;font-size:1rem">@(userName.Length > 0 ? userName[0].ToString().ToUpper() : "?")</span>
+                                        <div style="min-width:0">
+                                            <div class="fw-bold text-truncate" style="color:#333;max-width:180px">@userName</div>
+                                            <span class="badge bg-light text-uppercase fw-bold" style="color:#24628f;font-size:.65rem;letter-spacing:.05em">@userRole</span>
+                                        </div>
+                                    </div>
+                                    <div class="small text-muted text-truncate mb-1" style="max-width:230px" title="@userEmail">
+                                        <i class="bi bi-envelope me-1" style="color:#24628f"></i>@userEmail
+                                    </div>
+                                    @if (currentUser != null && !string.IsNullOrWhiteSpace(currentUser.Phone))
+                                    {
+                                        <div class="small text-muted text-truncate mb-1" style="max-width:230px">
+                                            <i class="bi bi-telephone me-1" style="color:#24628f"></i>@currentUser.Phone
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(roleValue))
+                                    {
+                                        <div class="small text-muted text-truncate" style="max-width:230px" title="@roleValue">
+                                            <i class="bi bi-person-badge me-1" style="color:#24628f"></i>
+                                            <span class="fw-bold">@roleLabel:</span> @roleValue
+                                        </div>
+                                    }
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider my-1" /></li>
+                            <li>
+                                <a class="dropdown-item" href="/Account/Logout">
+                                    <i class="bi bi-box-arrow-right me-2 text-koi-orange"></i>Sign Out
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                </ul>
+            </div>
+        }
+    </div>
+</nav>
+
+<!-- Flash Messages -->
+<div class="container-fluid px-0">
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-0 border-0 border-start border-4 border-success mb-0" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-0 border-0 border-start border-4 border-danger mb-0" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+</div>
+
+<!-- Page Header (from ViewData) -->
+@if (ViewData["Title"] != null && isLoggedIn)
+{
+    <div class="koi-page-header">
+        <div class="container-fluid px-4">
+            <h2 class="mb-0" style="font-size:1.2rem">@ViewData["Title"]</h2>
+        </div>
+    </div>
+}
+
+<main class="container-fluid px-4 pb-5">
+    @RenderBody()
+</main>
+
+<!-- Footer -->
+<footer class="koi-footer pt-4 pb-2 mt-5">
+    <div class="container-fluid px-4">
+        <div class="row g-4 mb-3">
+            <div class="col-md-4">
+                <img src="https://marketinghub.koi.edu.au/wp-content/uploads/2023/08/KOI-White-logo.png"
+                     alt="King's Own Institute"
+                     style="height:42px;width:auto;" />
+                <p class="small mt-2" style="color:rgba(255,255,255,.7)">
+                    Student Project Management System<br/>King's Own Institute
+                </p>
+            </div>
+            <div class="col-md-4">
+                <div class="fw-bold text-uppercase mb-2" style="font-size:.8rem;color:rgba(255,255,255,.5)">Sydney Campus</div>
+                <p class="small" style="color:rgba(255,255,255,.7)">
+                    Levels 7–11, 11 York St, Sydney NSW 2000<br/>
+                    Mon–Fri: 8:30am – 5:00pm<br/>
+                    <a href="tel:0292833583">(02) 9283 3583</a>
+                </p>
+            </div>
+            <div class="col-md-4">
+                <div class="fw-bold text-uppercase mb-2" style="font-size:.8rem;color:rgba(255,255,255,.5)">Newcastle Campus</div>
+                <p class="small" style="color:rgba(255,255,255,.7)">
+                    59 Darby Street, Cooks Hill NSW 2300<br/>
+                    Mon–Fri: 8:30am – 5:00pm<br/>
+                    <a href="tel:0240910500">(02) 4091 0500</a>
+                </p>
+            </div>
+        </div>
+        <div class="koi-footer-bottom py-2 text-center">
+            <small style="color:rgba(255,255,255,.5)">
+                &copy; @DateTime.Now.Year King's Own Institute &mdash; All rights reserved &mdash;
+                <a href="mailto:ask@koi.edu.au">ask@koi.edu.au</a>
+            </small>
+        </div>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

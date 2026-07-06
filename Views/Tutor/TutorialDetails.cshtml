@@ -1,0 +1,292 @@
+@model SPMS.Models.Tutorial
+@{ ViewData["Title"] = Model.Name; }
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="/Tutor/MyTutorials" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="fw-bold mb-0">@Model.Name</h4>
+</div>
+
+@if (TempData["Success"] != null) { <div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle me-2"></i>@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div> }
+@if (TempData["Error"] != null) { <div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i>@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div> }
+
+<div class="row g-4">
+    <!-- Left: Groups + Requests -->
+    <div class="col-lg-8">
+
+        <!-- Pending Group Approval Requests -->
+        @{
+            var pendingGroupReqs = Model.Groups
+                .SelectMany(g => g.GroupRequests.Where(r => r.Status == SPMS.Models.TutorGroupRequestStatus.Pending)
+                    .Select(r => new { Group = g, Request = r }))
+                .OrderBy(x => x.Request.RequestedAt)
+                .ToList();
+
+            var pendingProjReqs = Model.Groups
+                .Where(g => g.Status == SPMS.Models.TutorialGroupStatus.Approved)
+                .SelectMany(g => g.ProjectRequests.Where(r => r.Status == SPMS.Models.TutorGroupRequestStatus.Pending)
+                    .Select(r => new { Group = g, Request = r }))
+                .OrderBy(x => x.Request.RequestedAt)
+                .ToList();
+        }
+
+        @if (pendingGroupReqs.Any())
+        {
+            <div class="card border-0 shadow-sm mb-4 border-warning border-2">
+                <div class="card-header py-3" style="background:#fff8e1;">
+                    <span class="fw-semibold text-warning"><i class="bi bi-clock-history me-2"></i>Pending Group Approval Requests (@pendingGroupReqs.Count)</span>
+                </div>
+                <div class="card-body p-3">
+                    @foreach (var item in pendingGroupReqs)
+                    {
+                        <div class="mb-3 pb-3 border-bottom">
+                            <div class="fw-semibold mb-1">@item.Group.Name <span class="badge bg-secondary ms-1">@item.Group.Members.Count members</span></div>
+                            @if (!string.IsNullOrEmpty(item.Request.Message))
+                            {
+                                <div class="small text-muted mb-2"><i class="bi bi-chat-left-text me-1"></i>@item.Request.Message</div>
+                            }
+                            <div class="mb-2">
+                                <div class="small text-muted mb-1">Members:</div>
+                                <div class="d-flex flex-wrap gap-1">
+                                    @foreach (var m in item.Group.Members)
+                                    {
+                                        <span class="badge bg-light text-dark border">
+                                            @m.Student?.FullName
+                                            @if (m.IsLeader) { <i class="bi bi-star-fill text-warning ms-1"></i> }
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <form method="post" action="/Tutor/ApproveTutorialGroup" class="d-flex gap-2 flex-grow-1">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="requestId" value="@item.Request.Id" />
+                                    <input name="tutorFeedback" class="form-control form-control-sm" placeholder="Feedback (optional)" />
+                                    <button class="btn btn-success btn-sm px-3"><i class="bi bi-check-lg me-1"></i>Approve</button>
+                                </form>
+                                <form method="post" action="/Tutor/RejectTutorialGroup" class="d-flex gap-2">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="requestId" value="@item.Request.Id" />
+                                    <input name="tutorFeedback" class="form-control form-control-sm" placeholder="Reason *" required />
+                                    <button class="btn btn-danger btn-sm px-3"><i class="bi bi-x-lg me-1"></i>Reject</button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Pending Project Approval Requests -->
+        @if (pendingProjReqs.Any())
+        {
+            <div class="card border-0 shadow-sm mb-4 border-info border-2">
+                <div class="card-header py-3" style="background:#e0f7fa;">
+                    <span class="fw-semibold text-info"><i class="bi bi-folder2-open me-2"></i>Pending Project Requests (@pendingProjReqs.Count)</span>
+                </div>
+                <div class="card-body p-3">
+                    @foreach (var item in pendingProjReqs)
+                    {
+                        <div class="mb-3 pb-3 border-bottom">
+                            <div class="fw-semibold mb-1">@item.Group.Name</div>
+                            <div class="small mb-1">Project: <span class="fw-medium">@item.Request.Project?.Title</span></div>
+                            @if (!string.IsNullOrEmpty(item.Request.Message))
+                            {
+                                <div class="small text-muted mb-2"><i class="bi bi-chat-left-text me-1"></i>@item.Request.Message</div>
+                            }
+                            <div class="d-flex gap-2 mt-2">
+                                <form method="post" action="/Tutor/ApproveTutorialProjectRequest" class="d-flex gap-2 flex-grow-1">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="requestId" value="@item.Request.Id" />
+                                    <input name="tutorFeedback" class="form-control form-control-sm" placeholder="Feedback (optional)" />
+                                    <button class="btn btn-success btn-sm px-3"><i class="bi bi-check-lg me-1"></i>Approve</button>
+                                </form>
+                                <form method="post" action="/Tutor/RejectTutorialProjectRequest" class="d-flex gap-2">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="requestId" value="@item.Request.Id" />
+                                    <input name="tutorFeedback" class="form-control form-control-sm" placeholder="Reason *" required />
+                                    <button class="btn btn-danger btn-sm px-3"><i class="bi bi-x-lg me-1"></i>Reject</button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- All Groups Overview -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header koi-card-header py-3">
+                <i class="bi bi-people me-2"></i>Student Groups <span class="badge bg-secondary ms-1">@Model.Groups.Count</span>
+            </div>
+            <div class="card-body p-3">
+                @if (!Model.Groups.Any())
+                {
+                    <div class="text-muted text-center py-3 small">No groups formed yet. Students will create groups from their tutorial page.</div>
+                }
+                @foreach (var group in Model.Groups.OrderBy(g => g.Name))
+                {
+                    var badgeClass = group.Status switch {
+                        SPMS.Models.TutorialGroupStatus.Forming          => "bg-secondary",
+                        SPMS.Models.TutorialGroupStatus.Ready            => "bg-primary",
+                        SPMS.Models.TutorialGroupStatus.AwaitingApproval => "bg-warning text-dark",
+                        SPMS.Models.TutorialGroupStatus.Approved         => "bg-success",
+                        SPMS.Models.TutorialGroupStatus.Rejected         => "bg-danger",
+                        _                                                => "bg-secondary"
+                    };
+                    <div class="mb-3 pb-3 border-bottom">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-semibold"><i class="bi bi-collection me-1"></i>@group.Name</span>
+                            <span class="badge @badgeClass">@group.Status</span>
+                        </div>
+                        @if (group.ApprovedProject != null)
+                        {
+                            <div class="small text-success mb-1"><i class="bi bi-check-circle me-1"></i>Project: @group.ApprovedProject.Title</div>
+                        }
+                        @if (!group.Members.Any())
+                        {
+                            <div class="small text-muted">No members.</div>
+                        }
+                        else
+                        {
+                            <ul class="list-group list-group-flush">
+                                @foreach (var m in group.Members)
+                                {
+                                    <li class="list-group-item px-2 py-1 d-flex align-items-center gap-2">
+                                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:28px;height:28px;font-size:.8rem;">@m.Student!.FullName[0]</div>
+                                        <div class="flex-grow-1">
+                                            <div class="small fw-medium">
+                                                @m.Student.FullName
+                                                @if (m.IsLeader) { <span class="badge bg-warning text-dark ms-1" style="font-size:.65rem;">Leader</span> }
+                                            </div>
+                                            <div style="font-size:.7rem" class="text-muted"><i class="bi bi-envelope me-1"></i>@m.Student.Email</div>
+                                        </div>
+                                        <a href="/Message/Conversation/@m.StudentId" class="btn btn-sm btn-outline-primary py-0" style="font-size:.75rem;"><i class="bi bi-chat"></i></a>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Enrolled Students -->
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-header koi-card-header py-3">
+                <i class="bi bi-person-lines-fill me-2"></i>All Enrolled Students <span class="badge bg-secondary ms-1">@Model.Enrollments.Count</span>
+            </div>
+            <div class="card-body p-3">
+                @if (!Model.Enrollments.Any())
+                {
+                    <p class="text-muted small">No students enrolled yet.</p>
+                }
+                else
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var e in Model.Enrollments.OrderBy(e => e.Student!.FullName))
+                        {
+                            <li class="list-group-item px-0 py-2 d-flex align-items-center gap-2">
+                                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:32px;height:32px;">@e.Student!.FullName[0]</div>
+                                <div class="flex-grow-1">
+                                    <div class="small fw-medium">@e.Student.FullName</div>
+                                    <div style="font-size:.7rem" class="text-muted"><i class="bi bi-envelope me-1"></i>@e.Student.Email</div>
+                                    @if (e.Student.StudentNumber != null)
+                                    {
+                                        <div style="font-size:.7rem" class="text-muted"><i class="bi bi-hash me-1"></i>@e.Student.StudentNumber</div>
+                                    }
+                                </div>
+                                <a href="/Message/Conversation/@e.StudentId" class="btn btn-sm btn-outline-primary py-0"><i class="bi bi-chat"></i></a>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Post Announcement + History -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header koi-card-header py-3"><i class="bi bi-megaphone me-2"></i>Post Announcement</div>
+            <div class="card-body p-3">
+                <form method="post" action="/Tutor/PostAnnouncement">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="tutorialId" value="@Model.Id" />
+                    <div class="mb-2">
+                        <input name="title" class="form-control form-control-sm" placeholder="Title *" required />
+                    </div>
+                    <div class="mb-2">
+                        <textarea name="body" class="form-control form-control-sm" rows="4" placeholder="Announcement body *" required></textarea>
+                    </div>
+                    <button class="btn btn-koi btn-sm w-100"><i class="bi bi-send me-1"></i>Post to All Students</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header koi-card-header py-3"><i class="bi bi-clock-history me-2"></i>Past Announcements</div>
+            <div class="card-body p-3" style="max-height:350px;overflow-y:auto;">
+                @if (!Model.Announcements.Any())
+                { <p class="text-muted small">No announcements yet.</p> }
+                @foreach (var a in Model.Announcements.OrderByDescending(x => x.PostedAt))
+                {
+                    <div class="mb-3 pb-3 border-bottom">
+                        <div class="fw-semibold small">@a.Title</div>
+                        <div class="small text-muted">@a.Body</div>
+                        <div style="font-size:.7rem" class="text-muted mt-1">@a.PostedAt.ToString("dd MMM yyyy HH:mm")</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@{
+    var weeklyEntries = ViewBag.WeeklyEntries as List<SPMS.Models.TutorialWeeklyProgress> ?? new List<SPMS.Models.TutorialWeeklyProgress>();
+}
+@if (weeklyEntries.Any())
+{
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-header koi-card-header py-3"><i class="bi bi-calendar-week me-2"></i>Weekly Progress Submissions</div>
+        <div class="card-body p-3">
+            @foreach (var entry in weeklyEntries)
+            {
+                <div class="mb-4 pb-4 border-bottom">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <span class="fw-semibold">@entry.TutorialGroup?.Name</span>
+                            <span class="badge bg-primary ms-2">Week @entry.WeekNumber</span>
+                            @if (entry.TutorFeedback == null)
+                            {<span class="badge bg-warning text-dark ms-1">Awaiting Feedback</span>}
+                        </div>
+                        <span class="small text-muted">@entry.StudentSubmittedAt.ToString("dd MMM yyyy")</span>
+                    </div>
+                    <p class="small mb-2" style="white-space:pre-wrap;">@entry.StudentUpdate</p>
+                    @if (!string.IsNullOrEmpty(entry.FilePath))
+                    {
+                        <a href="/@entry.FilePath" target="_blank" class="btn btn-sm btn-outline-secondary mb-2">
+                            <i class="bi bi-file-earmark-arrow-down me-1"></i>@(entry.OriginalFileName ?? "Download Attachment")
+                        </a>
+                    }
+                    @if (entry.TutorFeedback != null)
+                    {
+                        <div class="p-2 rounded small" style="background:#f0f7ff;border-left:3px solid #1976d2;">
+                            <strong>Your feedback:</strong> @entry.TutorFeedback
+                        </div>
+                    }
+                    else
+                    {
+                        <form method="post" action="/Tutor/GiveTutorialWeeklyFeedback" class="mt-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="EntryId" value="@entry.Id" />
+                            <div class="d-flex gap-2 align-items-start">
+                                <textarea name="TutorFeedback" class="form-control form-control-sm" rows="2" placeholder="Give feedback..." required></textarea>
+                                <button class="btn btn-koi btn-sm px-3 flex-shrink-0">Submit</button>
+                            </div>
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
